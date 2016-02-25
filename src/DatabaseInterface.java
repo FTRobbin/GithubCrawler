@@ -5,8 +5,6 @@ import java.util.Queue;
  */
 public interface DatabaseInterface {
 
-    //TODO
-
     public void updateUser(UserInfo user);
     public void updateRepo(RepoInfo repo);
     public void clonedRepo(RepoInfo repo);

@@ -7,7 +7,7 @@ public class Main {
         DatabaseInterface db = new DummyDatabase();
         Thread crawler = new Thread(new Crawler(db));
         Thread cloner = new Thread(new Cloner(db));
-        crawler.run();
+        //crawler.run();
         cloner.run();
     }
 }
