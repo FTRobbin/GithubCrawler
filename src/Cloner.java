@@ -1,7 +1,9 @@
 import org.eclipse.jgit.api.Git;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.Queue;
 
 /**
@@ -21,7 +23,12 @@ public class Cloner implements Runnable {
     }
 
     private void renewQueue() {
-        toClone = db.getToCloneRepos();
+        try {
+            toClone = db.getToCloneRepos();
+        } catch (SQLException se) {
+            se.printStackTrace();
+            toClone = new LinkedList<>();
+        }
     }
 
     private boolean cloneSingle(RepoInfo repo) {
@@ -55,7 +62,12 @@ public class Cloner implements Runnable {
         }
 
         repo.clonedAt = new Date();
-        db.clonedRepo(repo);
+        try {
+            db.clonedRepo(repo);
+        } catch (SQLException se) {
+            se.printStackTrace();
+            return false;
+        }
         return true;
     }
 

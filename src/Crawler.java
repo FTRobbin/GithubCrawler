@@ -4,6 +4,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -68,7 +69,11 @@ public class Crawler implements Runnable {
                 pe.printStackTrace();
             }
             RepoInfo cur = new RepoInfo(id, user.id, name, url, new Date(), updatedAt, new Date(0));
-            db.updateRepo(cur);
+            try {
+                db.updateRepo(cur);
+            } catch (SQLException se) {
+                se.printStackTrace();
+            }
         }
     }
 
@@ -83,21 +88,24 @@ public class Crawler implements Runnable {
                 //All users have been crawled
                 break;
             }
-            n = 5;//For debug usage
             for (int i = 0; i < n; ++i) {
                 JSONObject user = array.getJSONObject(i);
                 String username = user.getString("login");
                 int id = user.getInt("id");
-                UserInfo cur = new UserInfo(id, username, new Date()),
-                         last = db.getUser(id);
-                //if not updated in a week
-                if (last == null || last.crawledAt.getTime() < cur.crawledAt.getTime() - (7 * 24 * 3600 * 1000)) {
-                    db.updateUser(cur);
-                    crawlUserRepo(cur);
+                try {
+                    UserInfo cur = new UserInfo(id, username, new Date()),
+                            last = db.getUser(id);
+                    //if not updated in a week
+                    if (last == null || last.crawledAt.getTime() < cur.crawledAt.getTime() - (7 * 24 * 3600 * 1000)) {
+                        db.updateUser(cur);
+                        crawlUserRepo(cur);
+                    }
+                    lastID = id;
+                } catch (SQLException se) {
+                    se.printStackTrace();
                 }
-                lastID = id;
             }
-        } while (false); //For debug usage
+        } while (true);
     }
     public void run() {
         while (true) {

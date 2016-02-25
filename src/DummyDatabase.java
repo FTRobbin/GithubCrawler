@@ -71,4 +71,12 @@ public class DummyDatabase implements DatabaseInterface {
         q.add(testRepo);
         return q;
     }
+
+    @Override
+    public void initDatabaseConnection() {
+    }
+
+    @Override
+    public void destroyDatabaseConnection() {
+    }
 }
