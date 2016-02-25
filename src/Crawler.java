@@ -4,28 +4,24 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 
 /**
  * Created by RobbinNi on 2/24/16.
  */
-public final class Crawler {
+public class Crawler implements Runnable {
+
+    private DatabaseInterface db;
 
     private String OAuth;
 
-    private int lastID;
-
-    private static Crawler crawler = null;
-
-    private Crawler() {
+    public Crawler(DatabaseInterface db) {
         OAuth = "&client_id=6625e55ca0d52666da40&client_secret=0b0d5d277dd798581418682266aeb0f07c756d60";
-        lastID = 0;
-    }
-
-    static public Crawler getCrawler() {
-        if (crawler == null) {
-            crawler = new Crawler();
-        }
-        return crawler;
+        this.db = db;
     }
 
     private String githubAPISafe(String URL) {
@@ -54,20 +50,30 @@ public final class Crawler {
         }
     }
 
-    public void crawlUserRepo(String username) {
-        String repoAPI = "https://api.github.com/users/" + username + "/repos";
+    private void crawlUserRepo(UserInfo user) {
+        String repoAPI = "https://api.github.com/users/" + user.name + "/repos";
         String raw = githubAPISafe(repoAPI);
         JSONArray array = new JSONArray(raw);
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-mm-dd'T'hh:mm:ss'Z'");
         int n = array.length();
         for (int i = 0; i < n; ++i) {
             JSONObject repo = array.getJSONObject(i);
             int id = repo.getInt("id");
             String name = repo.getString("name");
-            System.out.println(id + " : " + name);
+            String url = repo.getString("git_url");
+            Date updatedAt = null;
+            try {
+                updatedAt = format.parse(repo.getString("updated_at"));
+            } catch (ParseException pe) {
+                pe.printStackTrace();
+            }
+            RepoInfo cur = new RepoInfo(id, user.id, name, url, new Date(), updatedAt, new Date(0));
+            db.updateRepo(cur);
         }
     }
 
-    public void crawlAllUsers() {
+    private void crawlAllUsers() {
+        int lastID = 0;
         do {
             String usersAPI = "https://api.github.com/users?since=" + lastID;
             String raw = githubAPISafe(usersAPI);
@@ -82,10 +88,20 @@ public final class Crawler {
                 JSONObject user = array.getJSONObject(i);
                 String username = user.getString("login");
                 int id = user.getInt("id");
-                System.out.println(username + " " + id);
-                crawlUserRepo(username);
+                UserInfo cur = new UserInfo(id, username, new Date()),
+                         last = db.getUser(id);
+                //if not updated in a week
+                if (last == null || last.crawledAt.getTime() < cur.crawledAt.getTime() - (7 * 24 * 3600 * 1000)) {
+                    db.updateUser(cur);
+                    crawlUserRepo(cur);
+                }
                 lastID = id;
             }
         } while (false); //For debug usage
+    }
+    public void run() {
+        while (true) {
+            crawlAllUsers();
+        }
     }
 }
