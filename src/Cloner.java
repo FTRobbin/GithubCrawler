@@ -1,9 +1,10 @@
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 
 import java.io.File;
-import java.sql.SQLException;
+import java.io.IOException;
 import java.util.Date;
-import java.util.LinkedList;
+import java.util.Properties;
 import java.util.Queue;
 
 /**
@@ -17,18 +18,13 @@ public class Cloner implements Runnable {
 
     private Queue<RepoInfo> toClone;
 
-    public Cloner(DatabaseInterface db) {
+    public Cloner(DatabaseInterface db, Properties setup) {
         this.db = db;
-        localStorage = "Github/";
+        localStorage = setup.getProperty("local_path");
     }
 
     private void renewQueue() {
-        try {
-            toClone = db.getToCloneRepos();
-        } catch (SQLException se) {
-            se.printStackTrace();
-            toClone = new LinkedList<>();
-        }
+        toClone = db.getToCloneRepos();
     }
 
     private boolean cloneSingle(RepoInfo repo) {
@@ -39,35 +35,33 @@ public class Cloner implements Runnable {
 
         if (localGit.exists()) {
             try (Git result = Git.open(localGit)) {
-                //System.out.println("Pulling repository: " + result.getRepository().getDirectory());
                 result.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (IOException ie) {
+                ie.printStackTrace();
+                System.err.println("Unable to open local Git file : " + localGit.getPath());
+                repo.printRepoInfo();
+                System.exit(1);
                 return false;
             }
         } else {
             File localPath = new File(localStorage + url.replace("git://github.com/", "").replace(".git", ""));
             localPath.mkdirs();
-            //System.out.println("Cloning from " + url + " to " + localPath);
             try (Git result = Git.cloneRepository()
                     .setURI(url)
                     .setDirectory(localPath)
                     .call()) {
-                //System.out.println("Having repository: " + result.getRepository().getDirectory());
                 result.close();
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (GitAPIException ge) {
+                ge.printStackTrace();
+                System.err.println("Error when pulling remote repository to : " + localPath.getPath());
+                repo.printRepoInfo();
+                System.exit(1);
                 return false;
             }
         }
 
         repo.clonedAt = new Date();
-        try {
-            db.clonedRepo(repo);
-        } catch (SQLException se) {
-            se.printStackTrace();
-            return false;
-        }
+        db.clonedRepo(repo);
         return true;
     }
 

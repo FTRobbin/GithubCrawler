@@ -13,4 +13,10 @@ public class UserInfo {
         this.name = name;
         this.crawledAt = crawledAt;
     }
+
+    public void PrintUserInfo() {
+        System.out.println("id : " + id);
+        System.out.println("name : " + name);
+        System.out.println("crawled_at : " + crawledAt.toString());
+    }
 }

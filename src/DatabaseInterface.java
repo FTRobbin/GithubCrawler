@@ -1,4 +1,3 @@
-import java.sql.SQLException;
 import java.util.Queue;
 
 /**
@@ -6,11 +5,11 @@ import java.util.Queue;
  */
 public interface DatabaseInterface {
 
-    public void updateUser(UserInfo user) throws SQLException;
-    public void updateRepo(RepoInfo repo) throws SQLException;
-    public void clonedRepo(RepoInfo repo) throws SQLException;
-    public UserInfo getUser(int id) throws SQLException;
-    public Queue<RepoInfo> getToCloneRepos() throws SQLException;
-    public void initDatabaseConnection();
-    public void destroyDatabaseConnection();
+    void updateUser(UserInfo user);
+    void updateRepo(RepoInfo repo);
+    void clonedRepo(RepoInfo repo);
+    UserInfo getUser(int id);
+    Queue<RepoInfo> getToCloneRepos();
+    void initDatabaseConnection();
+    void destroyDatabaseConnection();
 }

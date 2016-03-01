@@ -11,9 +11,8 @@ public class GithubDatabase implements DatabaseInterface {
     private Connection dbConn;
     private String dbURL;
     private Statement statement;
-    private ResultSet results;
     private GithubDBParams dbParams;
-    private DateFormat formart = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     public GithubDatabase(GithubDBParams dbParams){
         this.dbParams = dbParams;
@@ -26,98 +25,138 @@ public class GithubDatabase implements DatabaseInterface {
     }
 
     @Override
-    public synchronized void updateUser(UserInfo user) throws SQLException {
-        /*
-        System.out.println("Update User Info:");
-        System.out.println("id : " + user.id);
-        System.out.println("name : " + user.name);
-        System.out.println("crawled_at : " + user.crawledAt.toString());
-        */
-        results = statement.executeQuery("SELECT * FROM user WHERE id = " + user.id + ";");
-        if (results.next()) {
-            statement.executeUpdate("UPDATE user SET "
-                    + "crawled_at = '" + formart.format(user.crawledAt) + "' "
-                    + "WHERE id = " + user.id
-                    + ";");
-        } else {
-            statement.executeUpdate("INSERT INTO user VALUES(" + user.id + ", '" + user.name + "', '" + formart.format(user.crawledAt) + "');");
+    public synchronized void updateUser(UserInfo user) {
+        String lastCommand = "";
+        try {
+            String SELECTUSER = "SELECT * FROM user WHERE id = " + user.id + ";";
+            lastCommand = SELECTUSER;
+            ResultSet results = statement.executeQuery(SELECTUSER);
+            lastCommand = "results.next()";
+            if (results.next()) {
+                String UPDATEUSER = "UPDATE user SET "
+                        + "crawled_at = '" + format.format(user.crawledAt) + "' "
+                        + "WHERE id = " + user.id
+                        + ";";
+                lastCommand = UPDATEUSER;
+                statement.executeUpdate(UPDATEUSER);
+            } else {
+                String INSERTUSER = "INSERT INTO user VALUES("
+                        + user.id + ", '"
+                        + user.name + "', '"
+                        + format.format(user.crawledAt) + "');";
+                lastCommand = INSERTUSER;
+                statement.executeUpdate(INSERTUSER);
+            }
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + lastCommand);
+            System.exit(1);
         }
     }
 
     @Override
-    public synchronized void updateRepo(RepoInfo repo) throws SQLException {
-        /*
-        System.out.println("Update Repo Info:");
-        System.out.println("id : " + repo.id);
-        System.out.println("owner_id : " + repo.ownerid);
-        System.out.println("name : " + repo.name);
-        System.out.println("url : " + repo.url);
-        System.out.println("crawled_at : " + repo.crawledAt.toString());
-        System.out.println("updated_at : " + repo.updatedAt.toString());
-        System.out.println("cloned_at : " + repo.clonedAt.toString());
-        */
-        results = statement.executeQuery("SELECT * FROM repo WHERE id = " + repo.id + ";");
-        if (results.next()) {
-            statement.executeUpdate("UPDATE repo SET "
-                    + "crawled_at = '" + formart.format(repo.crawledAt) + "' "
-                    + ", owner_id = " + repo.ownerid
-                    + ", url : '" + repo.url + "' "
-                    + ", updated_at = '" + formart.format(repo.updatedAt) + "' "
-                    + "WHERE id = " + repo.id
-                    + ";");
-        } else {
-            statement.executeUpdate("INSERT INTO repo VALUES(" + repo.id + ", '" + repo.name + "', '" + repo.url
-                    + "', '" + formart.format(repo.crawledAt)
-                    + "', '" + formart.format(repo.updatedAt)
-                    + "', '" + formart.format(repo.clonedAt)
-                    + "', " + repo.ownerid
-                    + ");");
+    public synchronized void updateRepo(RepoInfo repo) {
+        String lastCommand = "";
+        try {
+            String SELECTREPO = "SELECT * FROM repo WHERE id = " + repo.id + ";";
+            lastCommand = SELECTREPO;
+            ResultSet results = statement.executeQuery(SELECTREPO);
+            lastCommand = "results.next()";
+            if (results.next()) {
+                String UPDATEREPO = "UPDATE repo SET "
+                                + "crawled_at = '" + format.format(repo.crawledAt) + "' "
+                                + ", owner_id = " + repo.ownerid
+                                + ", url : '" + repo.url + "' "
+                                + ", updated_at = '" + format.format(repo.updatedAt) + "' "
+                                + "WHERE id = " + repo.id
+                                + ";";
+                lastCommand = UPDATEREPO;
+                statement.executeUpdate(UPDATEREPO);
+            } else {
+                String INSERTREPO = "INSERT INTO repo VALUES(" + repo.id + ", '" + repo.name + "', '" + repo.url
+                                + "', '" + format.format(repo.crawledAt)
+                                + "', '" + format.format(repo.updatedAt)
+                                + "', '" + format.format(repo.clonedAt)
+                                + "', " + repo.ownerid
+                                + ");";
+                lastCommand = INSERTREPO;
+                statement.executeUpdate(INSERTREPO);
+            }
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + lastCommand);
+            System.exit(1);
         }
     }
 
     @Override
-    public synchronized UserInfo getUser(int id) throws SQLException {
-        results = statement.executeQuery("SELECT * FROM user WHERE id = " + id);
-        if (results.next()) {
-            String name = results.getString(2);
-            Date crawledAt = results.getDate(3);
-            UserInfo user = new UserInfo(id, name, crawledAt);
-            return user;
-        } else return null;
-    }
-
-    @Override
-    public synchronized void clonedRepo(RepoInfo repo) throws SQLException {
-        /*
-        System.out.println("Cloned Repo:");
-        System.out.println("id : " + repo.id);
-        System.out.println("owner_id : " + repo.ownerid);
-        System.out.println("name : " + repo.name);
-        System.out.println("url : " + repo.url);
-        System.out.println("crawled_at : " + repo.crawledAt.toString());
-        System.out.println("updated_at : " + repo.updatedAt.toString());
-        System.out.println("cloned_at : " + repo.clonedAt.toString());
-        */
-        statement.executeUpdate("UPDATE repo SET cloned_at = '" + formart.format(repo.clonedAt)
-                + "' WHERE id = " + repo.id
-                + ";");
-    }
-
-    @Override
-    public synchronized Queue<RepoInfo> getToCloneRepos() throws SQLException {
-        Queue<RepoInfo> q = new LinkedList<>();
-        results = statement.executeQuery("SELECT * FROM repo WHERE cloned_at < updated_at;");
-        while (results.next()) {
-            int id = results.getInt(1);
-            String name = results.getString(2);
-            String url = results.getString(3);
-            java.util.Date crawledAt = results.getDate(4);
-            java.util.Date updatedAt = results.getDate(5);
-            java.util.Date clonedAt = results.getDate(6);
-            int ownerId = results.getInt(7);
-            q.add(new RepoInfo(id, ownerId, name, url, crawledAt, updatedAt, clonedAt));
+    public synchronized UserInfo getUser(int id) {
+        String lastCommand = "";
+        try {
+            String SELECTUSER = "SELECT * FROM user WHERE id = " + id;
+            lastCommand = SELECTUSER;
+            ResultSet results = statement.executeQuery(SELECTUSER);
+            lastCommand = "results.next";
+            if (results.next()) {
+                String name = results.getString(2);
+                Date crawledAt = results.getDate(3);
+                UserInfo user = new UserInfo(id, name, crawledAt);
+                return user;
+            } else {
+                return null;
+            }
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + lastCommand);
+            System.exit(1);
+            return null;
         }
-        return q;
+    }
+
+    @Override
+    public synchronized void clonedRepo(RepoInfo repo) {
+        String lastCommand = "";
+        try {
+            String UPDATEREPO = "UPDATE repo SET cloned_at = '" + format.format(repo.clonedAt)
+                            + "' WHERE id = " + repo.id
+                            + ";";
+            lastCommand = UPDATEREPO;
+            statement.executeUpdate(UPDATEREPO);
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + lastCommand);
+            System.exit(1);
+        }
+    }
+
+    @Override
+    public synchronized Queue<RepoInfo> getToCloneRepos() {
+        String lastCommand = "";
+        try {
+            Queue<RepoInfo> q = new LinkedList<>();
+            String SELECTREPO = "SELECT * FROM repo WHERE cloned_at < updated_at;";
+            lastCommand = SELECTREPO;
+            ResultSet results = statement.executeQuery(SELECTREPO);
+            lastCommand = "results.next()";
+            while (results.next()) {
+                lastCommand = "results.getxxx()";
+                int id = results.getInt(1);
+                String name = results.getString(2);
+                String url = results.getString(3);
+                java.util.Date crawledAt = results.getDate(4);
+                java.util.Date updatedAt = results.getDate(5);
+                java.util.Date clonedAt = results.getDate(6);
+                int ownerId = results.getInt(7);
+                q.add(new RepoInfo(id, ownerId, name, url, crawledAt, updatedAt, clonedAt));
+                lastCommand = "results.next()";
+            }
+            return q;
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + lastCommand);
+            System.exit(1);
+            return null;
+        }
     }
 
     public void initDatabaseConnection() {
@@ -125,18 +164,24 @@ public class GithubDatabase implements DatabaseInterface {
             this.dbURL = this.dbParams.getDBLink();
             Class.forName("com.mysql.jdbc.Driver").newInstance();
             this.dbConn = DriverManager.getConnection(this.dbURL, this.dbParams.getDBUser(), this.dbParams.getDBPass());
+            this.statement = this.dbConn.createStatement();
             System.out.println("DB conn established");
-        } catch(Exception e) {
+        } catch (ClassNotFoundException ce) {
+            System.err.println("Class \"com.mysql.jdbc.Driver\" not found. Please check runtime libraries.");
+            System.exit(1);
+        } catch (InstantiationException ie) {
+            System.err.println("Failed to load mysql.jdbc.Driver.");
+            System.exit(1);
+        } catch (IllegalAccessException ie) {
+            System.err.println("Failed to access mysql.jdbc.Driver.");
+            System.exit(1);
+        } catch (SQLException se) {
             System.err.println("Cannot connect to DB");
             System.err.println("Connection URL " + this.dbParams.getDBLink());
             System.err.println("Connection USER " + this.dbParams.getDBUser());
             System.err.println("Connection PASSWORD " + this.dbParams.getDBPass());
-            System.err.println(e.getMessage());
-        }
-        try {
-            this.statement = this.dbConn.createStatement();
-        } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println(se.getMessage());
+            System.exit(1);
         }
     }
 
@@ -144,7 +189,9 @@ public class GithubDatabase implements DatabaseInterface {
         try	{
             dbConn.close();
             System.out.println("DB conn closed");
-        } catch(Exception e){}
+        } catch (SQLException se) {
+            System.exit(1);
+        }
     }
 
 }

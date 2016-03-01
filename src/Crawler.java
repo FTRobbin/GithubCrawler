@@ -4,12 +4,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.sql.SQLException;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Properties;
 
 /**
  * Created by RobbinNi on 2/24/16.
@@ -18,10 +17,20 @@ public class Crawler implements Runnable {
 
     private DatabaseInterface db;
 
-    private String OAuth;
+    private ArrayList<String> OAuths;
+    private int keyNum;
+    private int ReconnectTime;
+    private int OutdateTime;
 
-    public Crawler(DatabaseInterface db) {
-        OAuth = "&client_id=6625e55ca0d52666da40&client_secret=0b0d5d277dd798581418682266aeb0f07c756d60";
+    public Crawler(DatabaseInterface db, Properties setup) {
+        OAuths = new ArrayList<>();
+        int n = Integer.valueOf(setup.getProperty("num_key"));
+        for (int i = 0; i < n; ++i) {
+            OAuths.add(setup.getProperty("oath" + (i + 1)));
+        }
+        keyNum = 0;
+        ReconnectTime = Integer.valueOf(setup.getProperty("reconnect"));
+        OutdateTime = Integer.valueOf(setup.getProperty("outdate"));
         this.db = db;
     }
 
@@ -29,18 +38,25 @@ public class Crawler implements Runnable {
         while (true) {
             String ret;
             try {
-                ret = Request.Get(URL).execute().returnContent().asString();
+                String OAuthURL;
+                if (URL.contains("?")) {
+                    OAuthURL = URL + "&" + OAuths.get(keyNum);
+                } else {
+                    OAuthURL = URL + "?" + OAuths.get(keyNum);
+                }
+                ret = Request.Get(OAuthURL).execute().returnContent().asString();
                 return ret;
             } catch (HttpResponseException re) {
                 //retry after 60 seconds
                 if (re.getStatusCode() == 403) {
                     //Achieved rate limit
                     System.err.println("Rate limit achieved.");
+                    keyNum = (keyNum + 1) % OAuths.size();
                 } else {
                     System.err.println("Unknown connection Error.");
                 }
                 try {
-                    Thread.sleep(60000);
+                    Thread.sleep(ReconnectTime);
                 } catch (InterruptedException ie) {
                     //Do nothing
                 }
@@ -69,11 +85,7 @@ public class Crawler implements Runnable {
                 pe.printStackTrace();
             }
             RepoInfo cur = new RepoInfo(id, user.id, name, url, new Date(), updatedAt, new Date(0));
-            try {
-                db.updateRepo(cur);
-            } catch (SQLException se) {
-                se.printStackTrace();
-            }
+            db.updateRepo(cur);
         }
     }
 
@@ -92,18 +104,14 @@ public class Crawler implements Runnable {
                 JSONObject user = array.getJSONObject(i);
                 String username = user.getString("login");
                 int id = user.getInt("id");
-                try {
-                    UserInfo cur = new UserInfo(id, username, new Date()),
-                            last = db.getUser(id);
-                    //if not updated in a week
-                    if (last == null || last.crawledAt.getTime() < cur.crawledAt.getTime() - (7 * 24 * 3600 * 1000)) {
-                        db.updateUser(cur);
-                        crawlUserRepo(cur);
-                    }
-                    lastID = id;
-                } catch (SQLException se) {
-                    se.printStackTrace();
+                UserInfo cur = new UserInfo(id, username, new Date()),
+                        last = db.getUser(id);
+                //if not updated in a week
+                if (last == null || last.crawledAt.getTime() < cur.crawledAt.getTime() - OutdateTime) {
+                    db.updateUser(cur);
+                    crawlUserRepo(cur);
                 }
+                lastID = id;
             }
         } while (true);
     }
