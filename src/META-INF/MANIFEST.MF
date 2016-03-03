@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Class-Path: jsch-0.1.53.jar log4j-api-2.5.jar log4j-core-2.5.jar slf4j
+ -api-1.7.17.jar slf4j-ext-1.7.17.jar slf4j-simple-1.7.17.jar log4j-ov
+ er-slf4j-1.7.17.jar org.eclipse.jgit-4.2.0.201601211800-r.jar mysql-c
+ onnector-java-5.1.38-bin.jar jna-4.1.0.jar httpcore-4.4.3.jar httpmim
+ e-4.5.1.jar fluent-hc-4.5.1.jar httpclient-4.5.1.jar commons-codec-1.
+ 9.jar jna-platform-4.1.0.jar commons-logging-1.2.jar httpclient-win-4
+ .5.1.jar httpclient-cache-4.5.1.jar
+Main-Class: Main
+

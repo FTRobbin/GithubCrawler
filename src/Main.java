@@ -36,7 +36,7 @@ public class Main {
         db.initDatabaseConnection();
         Thread crawler = new Thread(new Crawler(db, setup));
         Thread cloner = new Thread(new Cloner(db, setup));
-        crawler.run();
-        cloner.run();
+        crawler.start();
+        cloner.start();
     }
 }

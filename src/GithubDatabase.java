@@ -183,6 +183,43 @@ public class GithubDatabase implements DatabaseInterface {
             System.err.println(se.getMessage());
             System.exit(1);
         }
+        setupDatabaseAndTables();
+    }
+
+    public void setupDatabaseAndTables() {
+        String lastCommand = "";
+        try {
+            String CREATEDB = "CREATE DATABASE IF NOT EXISTS GithubCrawler;";
+            lastCommand = CREATEDB;
+            statement.execute(CREATEDB);
+            String USEDB = "USE GithubCrawler";
+            lastCommand = USEDB;
+            statement.execute(USEDB);
+            String CREATETABLE = "CREATE TABLE IF NOT EXISTS user ("
+                                + "id INT(11) NOT NULL PRIMARY KEY,"
+                                + "name VARCHAR(255) NOT NULL,"
+                                + "crawled_at DATETIME NOT NULL"
+                                + ");";
+            lastCommand = CREATETABLE;
+            statement.execute(CREATETABLE);
+            String CREATETABLE2 = "CREATE TABLE IF NOT EXISTS repo ("
+                                + "id INT(11) NOT NULL PRIMARY KEY,"
+                                + "name VARCHAR(255) NOT NULL,"
+                                + "git_url VARCHAR(255) NOT NULL,"
+                                + "crawled_at DATETIME NOT NULL,"
+                                + "updated_at DATETIME NOT NULL,"
+                                + "cloned_at DATETIME NOT NULL,"
+                                + "owner int(11) NOT NULL,"
+                                + "CONSTRAINT to_owner FOREIGN KEY (owner) REFERENCES user(id)"
+                                + ");";
+            lastCommand = CREATETABLE2;
+            statement.execute(CREATETABLE2);
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + lastCommand);
+            System.exit(1);
+        }
+        System.out.println("Database created");
     }
 
     public void destroyDatabaseConnection(){

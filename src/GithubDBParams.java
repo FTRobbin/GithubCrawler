@@ -27,7 +27,7 @@ public class GithubDBParams {
 
     public String getDBLink(){
         return this.dbAdapter + ":" + this.dbType + "://" + this.dbHostAddr + ":"
-                + this.dbPort + "/" + this.dbName;
+                + this.dbPort;// + "/" + this.dbName;
     }
 
     public String[] getParams(){
