@@ -32,8 +32,12 @@ public class Main {
                 setup.getProperty("adapter"),
                 setup.getProperty("type"),
                 setup.getProperty("port"));
-        DatabaseInterface db = new GithubDatabase(params);
+        GithubDatabase db = new GithubDatabase(params);
         db.initDatabaseConnection();
+        if (args.length > 0 && args[0].equals("-c")) {
+            db.dropExistDatabase();
+        }
+        db.setupDatabaseAndTables();
         Thread crawler = new Thread(new Crawler(db, setup));
         Thread cloner = new Thread(new Cloner(db, setup));
         crawler.start();

@@ -183,7 +183,20 @@ public class GithubDatabase implements DatabaseInterface {
             System.err.println(se.getMessage());
             System.exit(1);
         }
-        setupDatabaseAndTables();
+    }
+
+    public void dropExistDatabase() {
+        String lastCommand = "";
+        try {
+            String DROPDB = "DROP DATABASE IF EXISTS GithubCrawler;";
+            lastCommand = DROPDB;
+            statement.execute(DROPDB);
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + lastCommand);
+            System.exit(1);
+        }
+        System.out.println("Database dropped");
     }
 
     public void setupDatabaseAndTables() {

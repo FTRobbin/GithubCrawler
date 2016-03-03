@@ -1,5 +1,6 @@
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,12 +36,24 @@ public class Cloner implements Runnable {
 
         if (localGit.exists()) {
             try (Git result = Git.open(localGit)) {
+                result.pull().call();
                 result.close();
+            } catch (JGitInternalException je) {
+                je.printStackTrace();
+                System.err.println("Error when pulling remote repository to : " + localGit.getPath());
+                repo.printRepoInfo();
+                //System.exit(1);
+                return false;
+            } catch (GitAPIException ge) {
+                ge.printStackTrace();
+                System.err.println("Error when pulling remote repository to : " + localGit.getPath());
+                repo.printRepoInfo();
+                return false;
             } catch (IOException ie) {
                 ie.printStackTrace();
                 System.err.println("Unable to open local Git file : " + localGit.getPath());
                 repo.printRepoInfo();
-                System.exit(1);
+                //System.exit(1);
                 return false;
             }
         } else {
@@ -51,11 +64,17 @@ public class Cloner implements Runnable {
                     .setDirectory(localPath)
                     .call()) {
                 result.close();
+            } catch (JGitInternalException je) {
+                je.printStackTrace();
+                System.err.println("Error when cloning remote repository to : " + localPath.getPath());
+                repo.printRepoInfo();
+                //System.exit(1);
+                return false;
             } catch (GitAPIException ge) {
                 ge.printStackTrace();
-                System.err.println("Error when pulling remote repository to : " + localPath.getPath());
+                System.err.println("Error when cloning remote repository to : " + localPath.getPath());
                 repo.printRepoInfo();
-                System.exit(1);
+                //System.exit(1);
                 return false;
             }
         }
