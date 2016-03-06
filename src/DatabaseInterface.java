@@ -12,4 +12,5 @@ public interface DatabaseInterface {
     Queue<RepoInfo> getToCloneRepos();
     void initDatabaseConnection();
     void destroyDatabaseConnection();
+    void checkDatabaseStatus();
 }

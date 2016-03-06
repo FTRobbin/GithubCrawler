@@ -79,4 +79,8 @@ public class DummyDatabase implements DatabaseInterface {
     @Override
     public void destroyDatabaseConnection() {
     }
+
+    @Override
+    public void checkDatabaseStatus() {
+    }
 }

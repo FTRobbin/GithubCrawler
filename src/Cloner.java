@@ -19,13 +19,17 @@ public class Cloner implements Runnable {
 
     private Queue<RepoInfo> toClone;
 
+    private int waitTime;
+
     public Cloner(DatabaseInterface db, Properties setup) {
         this.db = db;
         localStorage = setup.getProperty("local_path");
+        waitTime = Integer.valueOf(setup.getProperty("waittime"));
     }
 
     private void renewQueue() {
         toClone = db.getToCloneRepos();
+        System.out.println("Get " + toClone.size() + " repos to clone.");
     }
 
     private boolean cloneSingle(RepoInfo repo) {
@@ -81,6 +85,7 @@ public class Cloner implements Runnable {
 
         repo.clonedAt = new Date();
         db.clonedRepo(repo);
+        System.out.println("Successfully cloned " + repo.url);
         return true;
     }
 
@@ -92,8 +97,14 @@ public class Cloner implements Runnable {
 
     public void run() {
         while (true) {
+            db.checkDatabaseStatus();
             renewQueue();
             cloneQueue();
+            try {
+                Thread.sleep(waitTime);
+            } catch (InterruptedException ie) {
+                //Do nothing
+            }
         }
     }
 }

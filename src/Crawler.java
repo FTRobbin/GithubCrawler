@@ -53,7 +53,7 @@ public class Crawler implements Runnable {
                     System.err.println("Rate limit achieved.");
                     keyNum = (keyNum + 1) % OAuths.size();
                 } else {
-                    System.err.println("Unknown connection Error.");
+                    System.err.println("Unknown connection Error. " + re.getStatusCode() + " " + re.getMessage());
                 }
                 try {
                     Thread.sleep(ReconnectTime);
@@ -87,6 +87,7 @@ public class Crawler implements Runnable {
             RepoInfo cur = new RepoInfo(id, user.id, name, url, new Date(), updatedAt, new Date(0));
             db.updateRepo(cur);
         }
+        System.out.println("Crawled repos of " + user.name);
     }
 
     private void crawlAllUsers() {
@@ -98,8 +99,10 @@ public class Crawler implements Runnable {
             int n = array.length();
             if (n == 0) {
                 //All users have been crawled
+                System.out.println("All users have been crawled");
                 break;
             }
+            System.out.println("Received " + n + " usernames");
             for (int i = 0; i < n; ++i) {
                 JSONObject user = array.getJSONObject(i);
                 String username = user.getString("login");

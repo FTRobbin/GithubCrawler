@@ -65,8 +65,8 @@ public class GithubDatabase implements DatabaseInterface {
             if (results.next()) {
                 String UPDATEREPO = "UPDATE repo SET "
                                 + "crawled_at = '" + format.format(repo.crawledAt) + "' "
-                                + ", owner_id = " + repo.ownerid
-                                + ", url : '" + repo.url + "' "
+                                + ", owner = " + repo.ownerid
+                                + ", git_url = '" + repo.url + "' "
                                 + ", updated_at = '" + format.format(repo.updatedAt) + "' "
                                 + "WHERE id = " + repo.id
                                 + ";";
@@ -134,11 +134,11 @@ public class GithubDatabase implements DatabaseInterface {
         String lastCommand = "";
         try {
             Queue<RepoInfo> q = new LinkedList<>();
-            String SELECTREPO = "SELECT * FROM repo WHERE cloned_at < updated_at;";
+            String SELECTREPO = "SELECT * FROM repo WHERE cloned_at < updated_at ORDER BY crawled_at DESC;";
             lastCommand = SELECTREPO;
             ResultSet results = statement.executeQuery(SELECTREPO);
             lastCommand = "results.next()";
-            while (results.next()) {
+            while (results.next() && q.size() < 50) {
                 lastCommand = "results.getxxx()";
                 int id = results.getInt(1);
                 String name = results.getString(2);
@@ -244,4 +244,28 @@ public class GithubDatabase implements DatabaseInterface {
         }
     }
 
+    @Override
+    public synchronized void checkDatabaseStatus() {
+        String command = "SELECT count(*) from ";
+        try {
+            {
+                ResultSet results = statement.executeQuery(command + "user;");
+                while (results.next()) {
+                    System.out.println("user : " + results.getString(1));
+                }
+                results.close();
+            }
+            {
+                ResultSet results = statement.executeQuery(command + "repo;");
+                while (results.next()) {
+                    System.out.println("repo : " + results.getString(1));
+                }
+                results.close();
+            }
+        } catch (SQLException se) {
+            se.printStackTrace();
+            System.err.println("When executing  : " + command);
+            System.exit(1);
+        }
+    }
 }
