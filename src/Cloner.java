@@ -4,6 +4,7 @@ import org.eclipse.jgit.api.errors.JGitInternalException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.util.Date;
 import java.util.Properties;
 import java.util.Queue;
@@ -59,14 +60,25 @@ public class Cloner implements Runnable {
                 repo.printRepoInfo();
                 //System.exit(1);
                 return false;
+            } catch (InvalidPathException ipe) {
+                ipe.printStackTrace();
+                System.err.println("Error when pulling remote repository to : " + localGit.getPath());
+                return false;
             }
         } else {
             File localPath = new File(localStorage + url.replace("git://github.com/", "").replace(".git", ""));
-            localPath.mkdirs();
-            try (Git result = Git.cloneRepository()
-                    .setURI(url)
-                    .setDirectory(localPath)
-                    .call()) {
+            try {
+                localPath.mkdirs();
+            } catch (InvalidPathException ipe) {
+                ipe.printStackTrace();
+                System.err.println("Error when cloning remote repository to : " + localPath.getPath());
+                return false;
+            }
+            try {
+                Git result = Git.cloneRepository()
+                        .setURI(url)
+                        .setDirectory(localPath)
+                        .call();
                 result.close();
             } catch (JGitInternalException je) {
                 je.printStackTrace();
@@ -79,6 +91,10 @@ public class Cloner implements Runnable {
                 System.err.println("Error when cloning remote repository to : " + localPath.getPath());
                 repo.printRepoInfo();
                 //System.exit(1);
+                return false;
+            } catch (InvalidPathException ipe) {
+                ipe.printStackTrace();
+                System.err.println("Error when cloning remote repository to : " + localPath.getPath());
                 return false;
             }
         }

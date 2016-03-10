@@ -21,6 +21,7 @@ public class Crawler implements Runnable {
     private int keyNum;
     private int ReconnectTime;
     private int OutdateTime;
+    private int jumpStart;
 
     public Crawler(DatabaseInterface db, Properties setup) {
         OAuths = new ArrayList<>();
@@ -31,12 +32,18 @@ public class Crawler implements Runnable {
         keyNum = 0;
         ReconnectTime = Integer.valueOf(setup.getProperty("reconnect"));
         OutdateTime = Integer.valueOf(setup.getProperty("outdate"));
+        jumpStart = Integer.valueOf(setup.getProperty("jumpstart", "0"));
         this.db = db;
     }
 
-    private String githubAPISafe(String URL) {
+    private String githubAPISafe(String URL) throws IOException {
+        int counter = 0;
+        String ret;
         while (true) {
-            String ret;
+            ++counter;
+            if (counter > 5) {
+                throw (new IOException());
+            }
             try {
                 String OAuthURL;
                 if (URL.contains("?")) {
@@ -55,6 +62,7 @@ public class Crawler implements Runnable {
                 } else {
                     System.err.println("Unknown connection Error. " + re.getStatusCode() + " " + re.getMessage());
                 }
+                System.out.println(URL);
                 try {
                     Thread.sleep(ReconnectTime);
                 } catch (InterruptedException ie) {
@@ -62,14 +70,21 @@ public class Crawler implements Runnable {
                 }
             } catch (IOException ie) {
                 ie.printStackTrace();
-                System.exit(1);
+                System.out.println(URL);
+                //System.exit(1);
             }
         }
     }
 
     private void crawlUserRepo(UserInfo user) {
         String repoAPI = "https://api.github.com/users/" + user.name + "/repos";
-        String raw = githubAPISafe(repoAPI);
+        String raw;
+        try {
+            raw = githubAPISafe(repoAPI);
+        } catch (IOException ie) {
+            System.out.println("Failed to crawl repos of " + user.name + " " + user.id);
+            return;
+        }
         JSONArray array = new JSONArray(raw);
         SimpleDateFormat format = new SimpleDateFormat("yyyy-mm-dd'T'hh:mm:ss'Z'");
         int n = array.length();
@@ -87,14 +102,23 @@ public class Crawler implements Runnable {
             RepoInfo cur = new RepoInfo(id, user.id, name, url, new Date(), updatedAt, new Date(0));
             db.updateRepo(cur);
         }
-        System.out.println("Crawled repos of " + user.name);
+        System.out.println("Crawled repos of " + user.name + " " + user.id);
     }
 
     private void crawlAllUsers() {
-        int lastID = 0;
+        int lastID = jumpStart;
+        jumpStart = 0;
         do {
             String usersAPI = "https://api.github.com/users?since=" + lastID;
-            String raw = githubAPISafe(usersAPI);
+            String raw;
+            while (true) {
+                try {
+                    raw = githubAPISafe(usersAPI);
+                    break;
+                } catch (IOException ie) {
+                    //DO NOTHING
+                }
+            }
             JSONArray array = new JSONArray(raw);
             int n = array.length();
             if (n == 0) {
